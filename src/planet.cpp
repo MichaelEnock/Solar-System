@@ -1,0 +1,135 @@
+#include "../include/shader_s.h"
+#include <GLFW/glfw3.h>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
+#include "../include/planet.h"
+#include <iostream>
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb_image.h>
+
+using namespace std;
+
+// Build shaders;
+
+int Planet::numberOfPlanet = 0;
+
+const unsigned int SCR_WIDTH = 900;
+const unsigned int SCR_HEIGHT = 700;
+
+Planet::Planet(float distance, float radius, float rotationSpeed, float orbitPeriod, glm::vec3 rotationAxis, const char *texture)
+{
+    this->distance = distance;
+    this->radius = radius;
+    this->position = glm::vec3(0.0f, 0.0f, distance);
+    this->rotationSpeed = rotationSpeed;
+    this->orbitPeriod = orbitPeriod;
+    this->rotationAxis = rotationAxis;
+    this->texture = texture;
+    this->pSphere = Sphere();
+    this->numberOfPlanet++;
+
+}
+
+void Planet::createPlanetSphere(int sectorCount, int stackCount, bool smooth, int upAxis, Shader &planetShader)
+{
+    pSphere.setSectorCount(sectorCount);
+    pSphere.setStackCount(stackCount);
+    pSphere.setSmooth(smooth);
+    pSphere.setUpAxis(upAxis);
+
+ 
+    glBufferData(GL_ARRAY_BUFFER, pSphere.getInterleavedVertexSize(), pSphere.getInterleavedVertices(), GL_STATIC_DRAW);    
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, pSphere.getIndexSize(), pSphere.getIndices(), GL_STATIC_DRAW);
+
+    // position attribute
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *)0);
+    glEnableVertexAttribArray(0);
+    // texture coord attribute
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *)(3 * sizeof(float)));
+    glEnableVertexAttribArray(1);
+
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *)(6 * sizeof(float)));
+    glEnableVertexAttribArray(2);
+
+    glGenTextures(1, &texture1);
+    glBindTexture(GL_TEXTURE_2D, texture1);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    // set texture filtering parameters
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    // load image, create texture and generate mipmaps
+    int width, height, nrChannels;
+    stbi_set_flip_vertically_on_load(true); // tell stb_image.h to flip loaded texture's on the y-axis.
+    unsigned char *data = stbi_load(this->texture, &width, &height, &nrChannels, 0);
+    if (data)
+    {
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+        glGenerateMipmap(GL_TEXTURE_2D);
+    }
+    else
+    {
+        std::cout << "Failed to load texture" << std::endl;
+    }
+    stbi_image_free(data);
+    planetShader.use();
+    glUniform1i(glGetUniformLocation(planetShader.ID, "texture1"), 0); 
+   // planetShader.setInt("texture1", 0);
+}
+
+void Planet::renderPlanet(Shader &planetShader, unsigned int &VAO)
+{
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, texture1);
+
+    planetShader.use();
+
+    glm::mat4 model = glm::mat4(1.0f);
+    float t = (float)glfwGetTime();
+
+    if (distance > 0.0f) {
+        float angleOrbit = t * (1.0f / orbitPeriod);
+        float x = cos(angleOrbit) * distance;
+        float z = sin(angleOrbit) * distance;
+        model = glm::translate(model, glm::vec3(x, 0.0f, z));
+    }
+
+    model = glm::rotate(model, t * rotationSpeed, rotationAxis);
+    model = glm::scale(model, glm::vec3(radius));
+
+    unsigned int modelLoc = glGetUniformLocation(planetShader.ID, "model");
+    glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+
+    glBindVertexArray(VAO);
+    glDrawElements(GL_TRIANGLES, pSphere.getIndexSize(), GL_UNSIGNED_INT, 0);
+
+
+
+    /* 
+    glm::mat4 model = glm::mat4(1.0f);
+    model = glm::translate(model, glm::vec3(0.0f, 0.0f, -6.0f) * this->radius);
+    model = glm::rotate(model, (float)glfwGetTime(), glm::vec3(0.0f, 1.0f, 0.0f));
+    float t = (float)glfwGetTime();
+    float angleOrbit = (orbitPeriod > 0.0f ? t / orbitPeriod : 0.0f);
+    glm::vec3 orbitPos = glm::vec3(cos(angleOrbit), 0.0f, sin(angleOrbit)) * distance;
+    model = glm::translate(model, orbitPos);
+
+    model = glm::rotate(model, t * rotationSpeed, rotationAxis);
+
+    unsigned int modelLoc = glGetUniformLocation(planetShader.ID, "model");
+    glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+
+    glBindVertexArray(VAO);
+    glDrawElements(GL_TRIANGLES, pSphere.getIndexSize(), GL_UNSIGNED_INT, 0);
+    */
+
+
+
+}
+
+Planet::~Planet()
+{
+   
+}
