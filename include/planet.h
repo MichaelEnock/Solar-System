@@ -16,11 +16,12 @@ class Planet {
           glm::vec3 rotationAxis;
           float rotationSpeed;
           unsigned int texture1;
-         static int numberOfPlanet;
 
     Planet(float distance, float radius,  float rotationSpeed, float orbitPeriod, glm::vec3 rotationAxis, const char *texture);
     void createPlanetSphere(int sectorCount, int stackCount, bool smooth, int upAxis, Shader& planetShader);
-    void renderPlanet(Shader& planetShader, unsigned int &VAO); 
+    void renderPlanet(Shader& planetShader, unsigned int &VAO);
+    void renderMoon(Shader& planetShader, unsigned int &VAO);
+    glm::mat4 calculateModel();
     
 };
 #endif

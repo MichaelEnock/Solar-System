@@ -12,8 +12,6 @@ using namespace std;
 
 // Build shaders;
 
-int Planet::numberOfPlanet = 0;
-
 const unsigned int SCR_WIDTH = 900;
 const unsigned int SCR_HEIGHT = 700;
 
@@ -27,8 +25,6 @@ Planet::Planet(float distance, float radius, float rotationSpeed, float orbitPer
     this->rotationAxis = rotationAxis;
     this->texture = texture;
     this->pSphere = Sphere();
-    this->numberOfPlanet++;
-
 }
 
 void Planet::createPlanetSphere(int sectorCount, int stackCount, bool smooth, int upAxis, Shader &planetShader)
@@ -38,8 +34,7 @@ void Planet::createPlanetSphere(int sectorCount, int stackCount, bool smooth, in
     pSphere.setSmooth(smooth);
     pSphere.setUpAxis(upAxis);
 
- 
-    glBufferData(GL_ARRAY_BUFFER, pSphere.getInterleavedVertexSize(), pSphere.getInterleavedVertices(), GL_STATIC_DRAW);    
+    glBufferData(GL_ARRAY_BUFFER, pSphere.getInterleavedVertexSize(), pSphere.getInterleavedVertices(), GL_STATIC_DRAW);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, pSphere.getIndexSize(), pSphere.getIndices(), GL_STATIC_DRAW);
 
     // position attribute
@@ -74,10 +69,10 @@ void Planet::createPlanetSphere(int sectorCount, int stackCount, bool smooth, in
     }
     stbi_image_free(data);
     planetShader.use();
-    glUniform1i(glGetUniformLocation(planetShader.ID, "texture1"), 0); 
-   // planetShader.setInt("texture1", 0);
+    glUniform1i(glGetUniformLocation(planetShader.ID, "texture1"), 0);
+    // planetShader.setInt("texture1", 0);
 }
-
+float t;
 void Planet::renderPlanet(Shader &planetShader, unsigned int &VAO)
 {
 
@@ -85,51 +80,79 @@ void Planet::renderPlanet(Shader &planetShader, unsigned int &VAO)
     glBindTexture(GL_TEXTURE_2D, texture1);
 
     planetShader.use();
+    glm::mat4 model = calculateModel();
 
+    //  unsigned int modelLoc = glGetUniformLocation(planetShader.ID, "modelMatrix");
+    // glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(modelMatrix));
+    unsigned int modelLoc = glGetUniformLocation(planetShader.ID, "model");
+    glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+
+    glBindVertexArray(VAO);
+    glDrawElements(GL_TRIANGLES, pSphere.getIndexSize(), GL_UNSIGNED_INT, 0);
+}
+
+void Planet::renderMoon(Shader &planetShader, unsigned int &VAO)
+{
+
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, texture1);
+
+    planetShader.use();
+    glm::mat4 earthModel = glm::mat4(1.0f);
+    glm::mat4 localMoon = glm::mat4(1.0f);
+
+    float moonOrbitRadius = 0.2f;
+
+    localMoon = glm::rotate(localMoon, t * rotationSpeed, glm::vec3(0.0f, 1.0f, 0.0f));
+    localMoon = glm::translate(localMoon, glm::vec3(moonOrbitRadius, 0.0f, 0.0f));
+    localMoon = glm::scale(localMoon, glm::vec3(radius));
+
+    // Earth orbiting sun
+    float earthOrbitSpeed = 1.0f;
+    float earthRadius = 15.0f;
+    float earthAngle = t * earthOrbitSpeed;
+    float distance = 10.0f;
+
+    float angleOrbit = t * (1.0f / orbitPeriod);
+    float x = cos(angleOrbit) * distance;
+    float z = sin(angleOrbit) * distance;
+
+    earthModel = glm::translate(earthModel, glm::vec3(x, 0.0f, z));
+    earthModel = glm::rotate(earthModel, t * rotationSpeed, rotationAxis);
+    earthModel = glm::scale(earthModel, glm::vec3(earthRadius));
+
+    // Moon orbiting earth
+    glm::mat4 moonModel = earthModel * localMoon;
+
+    unsigned int modelLoc = glGetUniformLocation(planetShader.ID, "model");
+    glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(moonModel));
+
+    glBindVertexArray(VAO);
+    glDrawElements(GL_TRIANGLES, pSphere.getIndexSize(), GL_UNSIGNED_INT, 0);
+}
+
+glm::mat4 Planet::calculateModel()
+{
     glm::mat4 model = glm::mat4(1.0f);
-    float t = (float)glfwGetTime();
+    t = (float)glfwGetTime();
 
-    if (distance > 0.0f) {
+    if (distance > 0.0f)
+    {
         float angleOrbit = t * (1.0f / orbitPeriod);
         float x = cos(angleOrbit) * distance;
         float z = sin(angleOrbit) * distance;
+        // modelMatrix = glm::translate(modelMatrix, glm::vec3(x, 0.0f, z));
         model = glm::translate(model, glm::vec3(x, 0.0f, z));
     }
 
+    // modelMatrix = glm::rotate(modelMatrix, t * rotationSpeed, rotationAxis);
+    // modelMatrix = glm::scale(modelMatrix, glm::vec3(radius));
     model = glm::rotate(model, t * rotationSpeed, rotationAxis);
     model = glm::scale(model, glm::vec3(radius));
 
-    unsigned int modelLoc = glGetUniformLocation(planetShader.ID, "model");
-    glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-
-    glBindVertexArray(VAO);
-    glDrawElements(GL_TRIANGLES, pSphere.getIndexSize(), GL_UNSIGNED_INT, 0);
-
-
-
-    /* 
-    glm::mat4 model = glm::mat4(1.0f);
-    model = glm::translate(model, glm::vec3(0.0f, 0.0f, -6.0f) * this->radius);
-    model = glm::rotate(model, (float)glfwGetTime(), glm::vec3(0.0f, 1.0f, 0.0f));
-    float t = (float)glfwGetTime();
-    float angleOrbit = (orbitPeriod > 0.0f ? t / orbitPeriod : 0.0f);
-    glm::vec3 orbitPos = glm::vec3(cos(angleOrbit), 0.0f, sin(angleOrbit)) * distance;
-    model = glm::translate(model, orbitPos);
-
-    model = glm::rotate(model, t * rotationSpeed, rotationAxis);
-
-    unsigned int modelLoc = glGetUniformLocation(planetShader.ID, "model");
-    glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-
-    glBindVertexArray(VAO);
-    glDrawElements(GL_TRIANGLES, pSphere.getIndexSize(), GL_UNSIGNED_INT, 0);
-    */
-
-
-
+    return model;
 }
 
 Planet::~Planet()
 {
-   
 }
