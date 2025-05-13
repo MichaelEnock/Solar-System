@@ -7,6 +7,7 @@
 #include <iostream>
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
+#include <cstdlib>
 
 using namespace std;
 
@@ -82,8 +83,6 @@ void Planet::renderPlanet(Shader &planetShader, unsigned int &VAO)
     planetShader.use();
     glm::mat4 model = calculateModel();
 
-    //  unsigned int modelLoc = glGetUniformLocation(planetShader.ID, "modelMatrix");
-    // glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(modelMatrix));
     unsigned int modelLoc = glGetUniformLocation(planetShader.ID, "model");
     glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
 
@@ -98,16 +97,18 @@ void Planet::renderMoon(Shader &planetShader, unsigned int &VAO)
     glBindTexture(GL_TEXTURE_2D, texture1);
 
     planetShader.use();
-    glm::mat4 earthModel = glm::mat4(1.0f);
-    glm::mat4 localMoon = glm::mat4(1.0f);
 
+    //moon model matrix
+    glm::mat4 localMoon = glm::mat4(1.0f);
     float moonOrbitRadius = 0.2f;
+    float moonOrbitSpeed = 0.2f;
 
     localMoon = glm::rotate(localMoon, t * rotationSpeed, glm::vec3(0.0f, 1.0f, 0.0f));
     localMoon = glm::translate(localMoon, glm::vec3(moonOrbitRadius, 0.0f, 0.0f));
     localMoon = glm::scale(localMoon, glm::vec3(radius));
-
-    // Earth orbiting sun
+    
+    // Earth orbiting sun matrix
+    glm::mat4 earthModel = glm::mat4(1.0f);
     float earthOrbitSpeed = 1.0f;
     float earthRadius = 15.0f;
     float earthAngle = t * earthOrbitSpeed;
@@ -151,6 +152,20 @@ glm::mat4 Planet::calculateModel()
     model = glm::scale(model, glm::vec3(radius));
 
     return model;
+}
+
+void Planet::increaseSpinning(){
+     this -> rotationSpeed = rotationSpeed + 0.2f;
+}
+void Planet::decreaseSpinning(){
+     this -> rotationSpeed = abs(rotationSpeed - 0.2f);
+}
+
+void Planet::increaseOrbiting(){
+     this -> orbitPeriod = orbitPeriod - 0.2f;
+}
+void Planet::decreaseOrbiting(){
+     this -> orbitPeriod = orbitPeriod + 0.2f;
 }
 
 Planet::~Planet()

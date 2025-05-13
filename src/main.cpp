@@ -95,7 +95,7 @@ int main()
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-    // load image, create texture and generate mipmaps
+    // load image, create texture and generate mipmaps for the sky
     int width, height, nrChannels;
     stbi_set_flip_vertically_on_load(false); // tell stb_image.h to flip loaded texture's on the y-axis.
     unsigned char *data = stbi_load("../Textures/space3.jpg", &width, &height, &nrChannels, 0);
@@ -120,7 +120,7 @@ int main()
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
 
-    // Build and run shader program
+    // Build and run shader programs
     Shader planetShader("../shaders/planet.vs", "../shaders/planet.fs");
     Shader sunShader("../shaders/sun.vs", "../shaders/sun.fs");
 
@@ -134,8 +134,9 @@ int main()
 
     // Planet jupiter(25.0f, 1.4f, 6.0f, 3.4f, glm::vec3(0, 1, 0), "..\\Textures\\jupitermap.jpg");
     // Planet mercury(25.0f, 1.4f, 20.5f, 7.0f, glm::vec3(0, 1, 0), "..\\Textures\\mercurymap1.jpg");
-    //  Planet mercury(11.0f, 1.4f, 20.5f, 7.0f, glm::vec3(0, 1, 0), "..\\Textures\\mercurymap1k.jpg");
+    // Planet mercury(11.0f, 1.4f, 20.5f, 7.0f, glm::vec3(0, 1, 0), "..\\Textures\\mercurymap1k.jpg");
 
+    //creating Spheres and passing the shader program
     mars.createPlanetSphere(36, 18, true, 3, planetShader);
     venus.createPlanetSphere(36, 18, true, 3, planetShader);
     neptune.createPlanetSphere(36, 18, true, 3, planetShader);
@@ -143,7 +144,7 @@ int main()
     moon.createPlanetSphere(36, 18, true, 3, planetShader);
     // jupiter.createPlanetSphere(36, 18, true, 3, planetShader);
     // mercury.createPlanetSphere(36, 18, true, 3, planetShader);
-
+    
     sun.createPlanetSphere(36, 18, true, 3, sunShader);
 
     while (!glfwWindowShouldClose(window))
@@ -201,7 +202,15 @@ int main()
         glUniformMatrix4fv(projectionLocSun, 1, GL_FALSE, glm::value_ptr(projection));
         // sun render
         sun.renderPlanet(sunShader, VAO);
-
+        
+        if(glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
+              sun.increaseSpinning();
+        if(glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
+              sun.decreaseSpinning();
+        if(glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
+              moon.increaseOrbiting();
+        if(glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
+              moon.decreaseOrbiting();
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         // -------------------------------------------------------------------------------
         glfwSwapBuffers(window);
@@ -237,7 +246,7 @@ void processInput(GLFWwindow *window)
         cameraPos += glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
         cameraPos -= glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
-    ;
+    
 }
 
 void mouse_callback(GLFWwindow *window, double xpos, double ypos)

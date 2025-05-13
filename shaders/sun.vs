@@ -9,10 +9,7 @@ out vec2 TexCoord;
 uniform mat4 model;
 uniform mat4 view;
 uniform mat4 projection;
-//uniform mat4 tilt;
-//uniform mat4 align;
-//uniform mat4 scale;
-//uniform mat4 translate;
+
 
 void main()
 {

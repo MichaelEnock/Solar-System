@@ -7,6 +7,7 @@ in vec3 Normal;
 // texture samplers
 uniform sampler2D texture1;
 uniform vec3 viewPos;
+
 vec3 lightPos = vec3(0.0f);
 vec3 lightColor = vec3(1.0f);
 
@@ -30,7 +31,6 @@ void main()
     vec3 reflectDir = reflect(-lightDir, norm);  
     float spec = pow(max(dot(viewDir, reflectDir), 0.0), 32);
     vec3 specular = specularStrength * spec * lightColor;  
-	// linearly interpolate between both textures (80% container, 20% awesomeface)
 	
 	// result
     vec3 objectColor = texture(texture1, TexCoord).xyz;
