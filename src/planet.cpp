@@ -92,14 +92,13 @@ void Planet::renderPlanet(Shader &planetShader, unsigned int &VAO)
 
 void Planet::renderMoon(Shader &planetShader, unsigned int &VAO)
 {
-
+    
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, texture1);
 
     planetShader.use();
 
-    //moon model matrix
-    glm::mat4 localMoon = glm::mat4(1.0f);
+  glm::mat4 localMoon = glm::mat4(1.0f);
     float moonOrbitRadius = 0.2f;
     float moonOrbitSpeed = 0.2f;
 
@@ -114,7 +113,7 @@ void Planet::renderMoon(Shader &planetShader, unsigned int &VAO)
     float earthAngle = t * earthOrbitSpeed;
     float distance = 10.0f;
 
-    float angleOrbit = t * (1.0f / orbitPeriod);
+    float angleOrbit = t * orbitPeriod;
     float x = cos(angleOrbit) * distance;
     float z = sin(angleOrbit) * distance;
 
@@ -162,10 +161,10 @@ void Planet::decreaseSpinning(){
 }
 
 void Planet::increaseOrbiting(){
-     this -> orbitPeriod = orbitPeriod - 0.2f;
+     this -> orbitPeriod = orbitPeriod + 0.1f;
 }
 void Planet::decreaseOrbiting(){
-     this -> orbitPeriod = orbitPeriod + 0.2f;
+     this -> orbitPeriod = abs(orbitPeriod - 0.1f);
 }
 
 Planet::~Planet()

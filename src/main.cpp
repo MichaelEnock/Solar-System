@@ -9,6 +9,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include "../include/Sphere.h"
 #include "../include/planet.h"
+#include "../include/camera.h"
 
 void mouse_callback(GLFWwindow *window, double xpos, double ypos);
 void framebuffer_size_callback(GLFWwindow *window, int width, int height);
@@ -18,19 +19,18 @@ void processInput(GLFWwindow *window);
 const unsigned int SCR_WIDTH = 900;
 const unsigned int SCR_HEIGHT = 700;
 
-glm::vec3 cameraPos = glm::vec3(0.0f, 10.0f, 40.0f);                   // glm::vec3(0.0f, 0.0f, 3.0f);
-glm::vec3 cameraFront = glm::normalize(glm::vec3(0.0f, -0.2f, -1.0f)); // glm::vec3(0.0f, 0.0f, -1.0f);
-glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
-
-float deltaTime = 0.0f;
-float lastFrame = 0.0f;
-
+glm::vec3 cameraPos = glm::vec3(0.0f, 10.0f, 40.0f); 
+Camera camera(cameraPos);   
+// glm::vec3(0.0f, 0.0f, 3.0f);
+//glm::vec3 cameraFront = glm::normalize(glm::vec3(0.0f, -0.2f, -1.0f)); // glm::vec3(0.0f, 0.0f, -1.0f);
+//glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
 float lastX = SCR_WIDTH * 0.5F, lastY = SCR_HEIGHT * 0.5F;
 bool firstMouse = true;
 
 float yaw = -90.0f;
 float pitch = 0.0f;
 
+float deltaTime = 0.0f;
 int main()
 {
     // glfw: initialize and configure
@@ -146,15 +146,16 @@ int main()
     // mercury.createPlanetSphere(36, 18, true, 3, planetShader);
     
     sun.createPlanetSphere(36, 18, true, 3, sunShader);
-
+    Timer timer;
+    timer.start();
     while (!glfwWindowShouldClose(window))
     {
-
+            
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         // calcurating delta time
-        float currentFrame = glfwGetTime();
-        deltaTime = currentFrame - lastFrame;
-        lastFrame = currentFrame;
+      
+        deltaTime = timer.getElapsedTime();
+        timer.start();
 
         // ----- processing user input
         processInput(window);
@@ -172,8 +173,8 @@ int main()
         // glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 
         // using camera as the view
-        glm::mat4 view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
-        glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
+        glm::mat4 view = camera.GetViewMatrix();//glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
+        glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
 
         // sending data to the planet shader
         planetShader.use();
@@ -181,7 +182,19 @@ int main()
         unsigned int projectionLoc = glGetUniformLocation(planetShader.ID, "projection");
         glUniformMatrix4fv(viewLoc, 1, GL_FALSE, &view[0][0]);
         glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
+       
+       //Directional light 
+       glm::vec3 lightDirection = glm::normalize(glm::vec3(-0.3f, -1.0f, -0.2f));
+       planetShader.setVec3("dirLightDir", lightDirection);
+       planetShader.setVec3("dirLightColor", glm::vec3(1.0f,1.0f,0.5f));
 
+        //point light
+        glm::vec3 sunPos = glm::vec3(0.0f, 0.0f, 0.0f);
+        glm::vec3 pLightPos = sunPos + glm::vec3(0.0f, 10.0f, 0.0f);
+        planetShader.setVec3("pointLightPos", pLightPos);
+        planetShader.setVec3("pointLightColor", glm::vec3(0.3f, 0.3f, 1.0f));
+        planetShader.setVec3("viewPos", cameraPos);
+    
         // rendering the planets using current bound datas
         neptune.renderPlanet(planetShader, VAO);
         venus.renderPlanet(planetShader, VAO);
@@ -191,18 +204,19 @@ int main()
         //  jupiter.renderPlanet(planetShader, VAO);
         // mercury.renderPlanet(planetShader, VAO);
         moon.renderMoon(planetShader, VAO);
+        sun.renderPlanet(planetShader,VAO);
         
        
       
         // sending data to sunShaders
-        sunShader.use();
+       /* sunShader.use();
         unsigned int viewLocSun = glGetUniformLocation(sunShader.ID, "view");
         unsigned int projectionLocSun = glGetUniformLocation(sunShader.ID, "projection");
         glUniformMatrix4fv(viewLocSun, 1, GL_FALSE, glm::value_ptr(view));
         glUniformMatrix4fv(projectionLocSun, 1, GL_FALSE, glm::value_ptr(projection));
         // sun render
-        sun.renderPlanet(sunShader, VAO);
-        
+       // sun.renderPlanet(sunShader, VAO);
+        */
         if(glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
               sun.increaseSpinning();
         if(glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
@@ -238,14 +252,14 @@ void processInput(GLFWwindow *window)
         glfwSetWindowShouldClose(window, true);
 
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-        cameraPos += cameraSpeed * cameraFront;
+        camera.ProcessKeyboard(FORWARD, deltaTime);  // += cameraSpeed * cameraFront;
 
     if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-        cameraPos -= cameraSpeed * cameraFront;
+        camera.ProcessKeyboard(BACKWARD, deltaTime);// -= cameraSpeed * cameraFront;
     if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-        cameraPos += glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
+        camera.ProcessKeyboard(LEFT, deltaTime);// += glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-        cameraPos -= glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
+        camera.ProcessKeyboard(RIGHT, deltaTime);// -= glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
     
 }
 
@@ -263,23 +277,8 @@ void mouse_callback(GLFWwindow *window, double xpos, double ypos)
     lastX = xpos;
     lastY = ypos;
 
-    float sensitivity = 0.1f;
-    xoffset *= sensitivity;
-    yoffset *= sensitivity;
+    camera.ProcessMouseMovement(xoffset, yoffset);
 
-    yaw += xoffset;
-    pitch += yoffset;
-
-    if (pitch > 89.0f)
-        pitch = 89.0f;
-    if (pitch < -89.0f)
-        pitch = -89.0f;
-
-    glm::vec3 direction;
-    direction.x = cos(glm::radians(yaw) * cos(glm::radians(pitch)));
-    direction.y = sin(glm::radians(pitch));
-    direction.z = sin(glm::radians(yaw) * cos(glm::radians(pitch)));
-    cameraFront = glm::normalize(direction);
 }
 // glfw: whenever the window size changed (by OS or user resize) this callback function executes
 // ---------------------------------------------------------------------------------------------

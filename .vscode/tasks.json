@@ -10,6 +10,7 @@
           "${file}",
           "${workspaceFolder}\\src\\planet.cpp",
           "${workspaceFolder}\\src\\Sphere.cpp",
+          "${workspaceFolder}\\src\\Timer.cpp",
           "-o",
           "${workspaceFolder}\\${fileBasenameNoExtension}.exe",
           "-I${workspaceFolder}\\dependencies\\include",
