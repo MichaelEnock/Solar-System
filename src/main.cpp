@@ -1,9 +1,9 @@
-#include "../include/shader_s.h"
 #include <glad/glad.h>
-#include "../include/Timer.h"
 #include <GLFW/glfw3.h>
-#include <stb_image.h>
 #include <iostream>
+#include <stb_image.h>
+#include "../include/shader_s.h"
+#include "../include/Timer.h"
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -19,11 +19,11 @@ void processInput(GLFWwindow *window);
 const unsigned int SCR_WIDTH = 900;
 const unsigned int SCR_HEIGHT = 700;
 
-glm::vec3 cameraPos = glm::vec3(0.0f, 10.0f, 40.0f); 
-Camera camera(cameraPos);   
-// glm::vec3(0.0f, 0.0f, 3.0f);
-//glm::vec3 cameraFront = glm::normalize(glm::vec3(0.0f, -0.2f, -1.0f)); // glm::vec3(0.0f, 0.0f, -1.0f);
-//glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
+//camera setting
+
+glm::vec3 cameraPos = glm::vec3(0.0f, 10.0f, 40.0f);
+Camera camera(cameraPos);
+
 float lastX = SCR_WIDTH * 0.5F, lastY = SCR_HEIGHT * 0.5F;
 bool firstMouse = true;
 
@@ -129,14 +129,9 @@ int main()
     Planet earth(10.0f, 1.0f, 15.0f, 1.0f, glm::vec3(0, 1, 0), "../Textures/earthmap1k.jpg");
     Planet mars(15.0f, 1.3f, 13.0f, 1.8f, glm::vec3(0, 1, 0), "../Textures/marsmap1k.jpg");
     Planet venus(20.0f, 1.6f, 9.0f, 2.6f, glm::vec3(0, 1, 0), "../Textures/venusmap.jpg");
-    Planet moon(1.5f, 0.03f, 8.0f, 1.0f, glm::vec3(0, 1, 0), "../Textures/moonmap1k.jpg");
+    Planet moon(3.0f, 1.0f, 2.0f, 1.0f, glm::vec3(0, 1, 0), "../Textures/moonmap1k.jpg");
 
-
-    // Planet jupiter(25.0f, 1.4f, 6.0f, 3.4f, glm::vec3(0, 1, 0), "..\\Textures\\jupitermap.jpg");
-    // Planet mercury(25.0f, 1.4f, 20.5f, 7.0f, glm::vec3(0, 1, 0), "..\\Textures\\mercurymap1.jpg");
-    // Planet mercury(11.0f, 1.4f, 20.5f, 7.0f, glm::vec3(0, 1, 0), "..\\Textures\\mercurymap1k.jpg");
-
-    //creating Spheres and passing the shader program
+    // creating Spheres and passing the shader program
     mars.createPlanetSphere(36, 18, true, 3, planetShader);
     venus.createPlanetSphere(36, 18, true, 3, planetShader);
     neptune.createPlanetSphere(36, 18, true, 3, planetShader);
@@ -144,16 +139,18 @@ int main()
     moon.createPlanetSphere(36, 18, true, 3, planetShader);
     // jupiter.createPlanetSphere(36, 18, true, 3, planetShader);
     // mercury.createPlanetSphere(36, 18, true, 3, planetShader);
-    
+
     sun.createPlanetSphere(36, 18, true, 3, sunShader);
     Timer timer;
     timer.start();
+
+    //render loop
     while (!glfwWindowShouldClose(window))
     {
-            
+
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         // calcurating delta time
-      
+
         deltaTime = timer.getElapsedTime();
         timer.start();
 
@@ -173,7 +170,7 @@ int main()
         // glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 
         // using camera as the view
-        glm::mat4 view = camera.GetViewMatrix();//glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
+        glm::mat4 view = camera.GetViewMatrix(); // glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
         glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
 
         // sending data to the planet shader
@@ -182,49 +179,47 @@ int main()
         unsigned int projectionLoc = glGetUniformLocation(planetShader.ID, "projection");
         glUniformMatrix4fv(viewLoc, 1, GL_FALSE, &view[0][0]);
         glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
-       
-       //Directional light 
-       glm::vec3 lightDirection = glm::normalize(glm::vec3(-0.3f, -1.0f, -0.2f));
-       planetShader.setVec3("dirLightDir", lightDirection);
-       planetShader.setVec3("dirLightColor", glm::vec3(1.0f,1.0f,0.5f));
 
-        //point light
+        // Directional light
+        glm::vec3 lightDirection = glm::normalize(glm::vec3(-0.3f, -1.0f, -0.2f));
+        planetShader.setVec3("dirLightDir", lightDirection);
+        planetShader.setVec3("dirLightColor", glm::vec3(1.0f, 1.0f, 0.5f));
+
+        // point light
         glm::vec3 sunPos = glm::vec3(0.0f, 0.0f, 0.0f);
         glm::vec3 pLightPos = sunPos + glm::vec3(0.0f, 10.0f, 0.0f);
         planetShader.setVec3("pointLightPos", pLightPos);
         planetShader.setVec3("pointLightColor", glm::vec3(0.3f, 0.3f, 1.0f));
         planetShader.setVec3("viewPos", cameraPos);
-    
-        // rendering the planets using current bound datas
+
+        // rendering the planets using current bound data
         neptune.renderPlanet(planetShader, VAO);
         venus.renderPlanet(planetShader, VAO);
         earth.renderPlanet(planetShader, VAO);
         mars.renderPlanet(planetShader, VAO);
-       // moon.renderPlanet(planetShader, VAO);
-        //  jupiter.renderPlanet(planetShader, VAO);
-        // mercury.renderPlanet(planetShader, VAO);
-        moon.renderMoon(planetShader, VAO);
-        sun.renderPlanet(planetShader,VAO);
         
+        //renderind moon orbiting earth
+        moon.renderMoon(planetShader, VAO, earth);
+        sun.renderPlanet(planetShader, VAO);
        
-      
+
         // sending data to sunShaders
-       /* sunShader.use();
-        unsigned int viewLocSun = glGetUniformLocation(sunShader.ID, "view");
-        unsigned int projectionLocSun = glGetUniformLocation(sunShader.ID, "projection");
-        glUniformMatrix4fv(viewLocSun, 1, GL_FALSE, glm::value_ptr(view));
-        glUniformMatrix4fv(projectionLocSun, 1, GL_FALSE, glm::value_ptr(projection));
-        // sun render
-       // sun.renderPlanet(sunShader, VAO);
-        */
-        if(glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
-              sun.increaseSpinning();
-        if(glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
-              sun.decreaseSpinning();
-        if(glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
-              moon.increaseOrbiting();
-        if(glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
-              moon.decreaseOrbiting();
+        /* sunShader.use();
+         unsigned int viewLocSun = glGetUniformLocation(sunShader.ID, "view");
+         unsigned int projectionLocSun = glGetUniformLocation(sunShader.ID, "projection");
+         glUniformMatrix4fv(viewLocSun, 1, GL_FALSE, glm::value_ptr(view));
+         glUniformMatrix4fv(projectionLocSun, 1, GL_FALSE, glm::value_ptr(projection));
+         // sun render
+        // sun.renderPlanet(sunShader, VAO);
+         */
+        if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
+            sun.increaseSpinning();
+        if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
+            sun.decreaseSpinning();
+        if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
+            moon.increaseOrbiting();
+        if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
+            moon.decreaseOrbiting();
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         // -------------------------------------------------------------------------------
         glfwSwapBuffers(window);
@@ -252,15 +247,14 @@ void processInput(GLFWwindow *window)
         glfwSetWindowShouldClose(window, true);
 
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-        camera.ProcessKeyboard(FORWARD, deltaTime);  // += cameraSpeed * cameraFront;
+        camera.ProcessKeyboard(FORWARD, deltaTime); 
 
     if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-        camera.ProcessKeyboard(BACKWARD, deltaTime);// -= cameraSpeed * cameraFront;
+        camera.ProcessKeyboard(BACKWARD, deltaTime); 
     if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-        camera.ProcessKeyboard(LEFT, deltaTime);// += glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
+        camera.ProcessKeyboard(LEFT, deltaTime); 
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-        camera.ProcessKeyboard(RIGHT, deltaTime);// -= glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
-    
+        camera.ProcessKeyboard(RIGHT, deltaTime); 
 }
 
 void mouse_callback(GLFWwindow *window, double xpos, double ypos)
@@ -278,7 +272,6 @@ void mouse_callback(GLFWwindow *window, double xpos, double ypos)
     lastY = ypos;
 
     camera.ProcessMouseMovement(xoffset, yoffset);
-
 }
 // glfw: whenever the window size changed (by OS or user resize) this callback function executes
 // ---------------------------------------------------------------------------------------------
@@ -289,4 +282,3 @@ void framebuffer_size_callback(GLFWwindow *window, int width, int height)
     // height will be significantly larger than specified on retina displays.
     glViewport(0, 0, width, height);
 }
-

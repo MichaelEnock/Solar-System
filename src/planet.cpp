@@ -90,36 +90,30 @@ void Planet::renderPlanet(Shader &planetShader, unsigned int &VAO)
     glDrawElements(GL_TRIANGLES, pSphere.getIndexSize(), GL_UNSIGNED_INT, 0);
 }
 
-void Planet::renderMoon(Shader &planetShader, unsigned int &VAO)
+void Planet::renderMoon(Shader &planetShader, unsigned int &VAO, Planet &Earth)
 {
-    
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, texture1);
-
     planetShader.use();
 
-  glm::mat4 localMoon = glm::mat4(1.0f);
-    float moonOrbitRadius = 0.2f;
-    float moonOrbitSpeed = 0.2f;
+    float t = (float)glfwGetTime();
 
-    localMoon = glm::rotate(localMoon, t * rotationSpeed, glm::vec3(0.0f, 1.0f, 0.0f));
+    // Calculate moon's local orbit (around Earth)
+    glm::mat4 localMoon = glm::mat4(1.0f);
+
+    float moonOrbitRadius = 4.0f;
+    float moonAngle = t * orbitPeriod; // moonOrbitSpeed;
+
+    // Moon orbiting around Earth
+    localMoon = glm::rotate(localMoon, moonAngle, rotationAxis);
     localMoon = glm::translate(localMoon, glm::vec3(moonOrbitRadius, 0.0f, 0.0f));
-    localMoon = glm::scale(localMoon, glm::vec3(radius));
     
-    // Earth orbiting sun matrix
-    glm::mat4 earthModel = glm::mat4(1.0f);
-    float earthOrbitSpeed = 1.0f;
-    float earthRadius = 15.0f;
-    float earthAngle = t * earthOrbitSpeed;
-    float distance = 10.0f;
+    //rotating moon
+    localMoon = glm::rotate(localMoon, t * rotationSpeed, rotationAxis);
+    localMoon = glm::scale(localMoon, glm::vec3(radius * 0.50)); 
 
-    float angleOrbit = t * orbitPeriod;
-    float x = cos(angleOrbit) * distance;
-    float z = sin(angleOrbit) * distance;
-
-    earthModel = glm::translate(earthModel, glm::vec3(x, 0.0f, z));
-    earthModel = glm::rotate(earthModel, t * rotationSpeed, rotationAxis);
-    earthModel = glm::scale(earthModel, glm::vec3(earthRadius));
+    //Earth’s position
+    glm::mat4 earthModel = Earth.calculateModel();
 
     // Moon orbiting earth
     glm::mat4 moonModel = earthModel * localMoon;
@@ -153,18 +147,22 @@ glm::mat4 Planet::calculateModel()
     return model;
 }
 
-void Planet::increaseSpinning(){
-     this -> rotationSpeed = rotationSpeed + 0.2f;
+void Planet::increaseSpinning()
+{
+    this->rotationSpeed = rotationSpeed + 0.2f;
 }
-void Planet::decreaseSpinning(){
-     this -> rotationSpeed = abs(rotationSpeed - 0.2f);
+void Planet::decreaseSpinning()
+{
+    this->rotationSpeed = abs(rotationSpeed - 0.2f);
 }
 
-void Planet::increaseOrbiting(){
-     this -> orbitPeriod = orbitPeriod + 0.1f;
+void Planet::increaseOrbiting()
+{
+    this->orbitPeriod = orbitPeriod + 0.1f;
 }
-void Planet::decreaseOrbiting(){
-     this -> orbitPeriod = abs(orbitPeriod - 0.1f);
+void Planet::decreaseOrbiting()
+{
+    this->orbitPeriod = abs(orbitPeriod - 0.1f);
 }
 
 Planet::~Planet()
